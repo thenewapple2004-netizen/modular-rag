@@ -11,7 +11,58 @@ This project combines a **FastAPI/Python backend** with a beautiful, fully respo
 * **Context-Aware Memory:** The Assistant remembers up to your last 10 turns of conversation so you can ask natural follow-up questions without repeating yourself.
 * **Premium React Frontend:** A custom-built UI using Vite, React, and CSS Glassmorphism. Features auto-scrolling, typing indicators, animated badges when a URL is ingested, and a 260px collapsible sidebar for session history.
 
-## 🏗️ Folder Structure
+## 🏗️ System Architecture Flow
+```mermaid
+graph TD
+    %% Styling
+    classDef frontend fill:#3b82f6,stroke:#1e3a8a,stroke-width:2px,color:#fff
+    classDef api fill:#10b981,stroke:#064e3b,stroke-width:2px,color:#fff
+    classDef router fill:#f59e0b,stroke:#78350f,stroke-width:2px,color:#fff
+    classDef tool fill:#8b5cf6,stroke:#4c1d95,stroke-width:2px,color:#fff
+    classDef db fill:#ef4444,stroke:#7f1d1d,stroke-width:2px,color:#fff
+
+    %% Components
+    User((🧍 User Chat)):::frontend
+    UI[React Frontend UI]:::frontend
+    API[FastAPI Backend]:::api
+    PreProcess[URL Regex Extractor]:::api
+    Router{LLM Smart Router}:::router
+    
+    VecDB[Vector DB Module]:::tool
+    Chroma[(ChromaDB)]:::db
+    
+    LinkReader[Web Scraper Module]:::tool
+    WWW((Live Internet)):::db
+
+    Weather[Weather API Placeholder]:::tool
+    WebSearch[Web Search Placeholder]:::tool
+    
+    LLM[Groq LLaMA 3.1 Core]:::router
+
+    %% Flow
+    User -- "Asks Question / Pastes URL" --> UI
+    UI -- "POST /chat" --> API
+    API --> PreProcess
+    PreProcess -- "If URL found" --> LinkReader
+    PreProcess -- "Query Text" --> Router
+    
+    Router -- "Rules: Need Web Context?" --> LinkReader
+    Router -- "Rules: Tech Concept?" --> VecDB
+    Router -. "Future Rule" .-> Weather
+    Router -. "Future Rule" .-> WebSearch
+    
+    LinkReader -- "Scrapes HTML" --> WWW
+    VecDB -- "Semantic Search" --> Chroma
+    
+    LinkReader -- "Extracted Text" --> LLM
+    VecDB -- "Retrieved Context" --> LLM
+    
+    LLM -- "Generates Final Answer" --> API
+    API -- "JSON Response" --> UI
+    UI -- "Displays Chat Bubble" --> User
+```
+
+## 📂 Folder Structure
 I've cleanly separated the logic into a standard full-stack layout:
 ```text
 modular-rag/
