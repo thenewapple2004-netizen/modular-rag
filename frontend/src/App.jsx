@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Link as LinkIcon, Menu, Plus, MessageSquare, Sun, Moon, Sparkles } from 'lucide-react';
+import { Send, Bot, User, Link as LinkIcon, Menu, Plus, MessageSquare, Sun, Moon, Sparkles, Trash2 } from 'lucide-react';
 import './index.css';
 
 function App() {
@@ -49,6 +49,25 @@ function App() {
     setCurrentSessionId(id);
     if (window.innerWidth <= 768) {
       setIsSidebarOpen(false);
+    }
+  };
+
+  const deleteSession = (e, id) => {
+    e.stopPropagation(); // Prevent the session from being selected when clicking delete
+
+    const updatedSessions = sessions.filter(s => s.id !== id);
+
+    if (updatedSessions.length === 0) {
+      // If we deleted the last chat, create a brand new empty one
+      const newId = Date.now();
+      setSessions([{ id: newId, title: "New Conversation", messages: [] }]);
+      setCurrentSessionId(newId);
+    } else {
+      setSessions(updatedSessions);
+      // If we deleted the currently active chat, jump to the first available one
+      if (currentSessionId === id) {
+        setCurrentSessionId(updatedSessions[0].id);
+      }
     }
   };
 
@@ -123,8 +142,17 @@ function App() {
               className={`history-item ${session.id === currentSessionId ? 'active' : ''}`}
               onClick={() => selectSession(session.id)}
             >
-              <MessageSquare size={16} />
-              {session.title}
+              <div className="history-item-content">
+                <MessageSquare size={16} />
+                <span className="history-title">{session.title}</span>
+              </div>
+              <button
+                className="delete-chat-btn"
+                onClick={(e) => deleteSession(e, session.id)}
+                title="Delete Chat"
+              >
+                <Trash2 size={14} />
+              </button>
             </div>
           ))}
         </div>

@@ -130,16 +130,50 @@ body {
 .history-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
+  justify-content: space-between;
+  padding: 10px 12px;
   border-radius: var(--radius-md);
   color: var(--text-sidebar);
   cursor: pointer;
   transition: background 0.2s;
   font-size: 0.9rem;
+}
+
+.history-item-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.history-title {
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.delete-chat-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+
+.history-item:hover .delete-chat-btn {
+  opacity: 1;
+}
+
+.delete-chat-btn:hover {
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.1);
 }
 
 .history-item:hover,
