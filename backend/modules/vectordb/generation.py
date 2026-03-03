@@ -68,7 +68,7 @@ def vectordb_answer(user_query: str, chat_history: list = None) -> str:
     print(f"[Confidence Check] Score: {confidence_score}/100")
 
     # --- Step 4: Generation ---
-    if confidence_score < 80: 
+    if confidence_score < 60:
         return (
             f"**Query Rejected** (Confidence Score: {confidence_score}/100)\n\n"
             "The retrieved context does not have enough information to answer "
@@ -77,19 +77,28 @@ def vectordb_answer(user_query: str, chat_history: list = None) -> str:
             "or a clearer question."
         )
 
-    system_prompt = f"""You are a helpful assistant with memory of the full conversation.
-You also have access to a relevant document chunk below.
+    system_prompt = f"""
+ROLE:
+You are an expert Research Assistant specialized in analyzing technical documents. You have full memory of the past conversation context.
 
-Use the DOCUMENT CONTEXT to answer questions about the topic.
-Use the CONVERSATION HISTORY to answer follow-up questions like:
-- "what was my last question?"
-- "explain that again"
-- "summarize what we talked about"
+CONTEXT HANDLING (The "Forgiving Reader" Protocol):
+1. RECONSTRUCT FRAGMENTS: The provided context is extracted from a PDF. If you encounter split words, missing symbols, or mangled LaTeX/Math, reconstruct the meaning logically.
+2. CONTINUITY: If a list or explanation ends abruptly in one chunk, search other provided chunks for the continuation.
+
+RESPONSE GUIDELINES:
+- GROUNDING: Answer based on the provided DOCUMENT CONTEXT. 
+- MEMORY: You MUST use the conversation history to answer follow-up questions (e.g., "explain that last point again" or "what did I just ask?"). Do not say "I don't have this information" if the answer is literally inside your chat history memory.
+- SYNTHESIS: Synthesize information into a cohesive answer.
+- STRUCTURE: Use clear headings, bold text, and bullet points.
+
+USER QUERY:
+{user_query}
 
 DOCUMENT CONTEXT:
 {retrieved_docs}
 
-If neither the context nor the conversation history has the answer, say: 'I don't have this information yet.'"""
+FINAL REMINDER: Do not hallucinate. If neither the context nor the conversation history contains the answer, explain what is missing.
+"""
 
     answer = llm_response(refined_query, system_prompt, history=chat_history)
     return answer

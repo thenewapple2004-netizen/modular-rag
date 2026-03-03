@@ -16,20 +16,20 @@ for page in reader.pages:
     if text:
         full_text += text + "\n"
 
-# 3. Better Chunking (1000 characters is standard for RAG)
-CHUNK_SIZE = 1000 
+# 3. Better Chunking (300 characters requested)
+CHUNK_SIZE = 300 
 chunks = []
 
-# Split by double newlines first to try and keep paragraphs together
-paragraphs = full_text.split('\n\n')
+# Split by words to guarantee we strictly enforce the CHUNK_SIZE limit
+words = full_text.split()
 current_chunk = ""
 
-for p in paragraphs:
-    if len(current_chunk) + len(p) < CHUNK_SIZE:
-        current_chunk += p + "\n\n"
+for word in words:
+    if len(current_chunk) + len(word) + 1 <= CHUNK_SIZE:
+        current_chunk += word + " "
     else:
         chunks.append(current_chunk.strip())
-        current_chunk = p + "\n\n"
+        current_chunk = word + " "
 if current_chunk:
     chunks.append(current_chunk.strip())
 

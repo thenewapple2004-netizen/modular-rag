@@ -9,6 +9,6 @@ def get_context(user_query):
 
     context = collection.query(
         query_texts=[user_query],
-        n_results=1
+        n_results=5
     )
     return "\n".join(context["documents"][0])

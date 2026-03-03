@@ -97,7 +97,7 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: userQuery,
-          chat_history: newMessages.map(m => ({ role: m.role, content: m.content })),
+          chat_history: newMessages.slice(0, -1).map(m => ({ role: m.role, content: m.content })),
           web_content: [...newMessages].reverse().find(m => m.web_content)?.web_content || ""
         })
       });

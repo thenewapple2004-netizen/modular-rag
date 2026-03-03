@@ -2,7 +2,6 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import os
 
-# Explicitly load .env from the same folder as this file
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
 client = OpenAI(
@@ -21,6 +20,6 @@ def llm_response(query: str, system_prompt: str, history: list = None):
     response = client.chat.completions.create(
         messages=messages,
         model="llama-3.1-8b-instant",
-        max_tokens=200,
+        max_tokens=500,
     )
     return response.choices[0].message.content
