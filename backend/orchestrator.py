@@ -15,13 +15,18 @@ except ImportError as e:
     sys.exit(1)
 
 
-def orchestrate(query: str, chat_history: list = None, web_content: str = "") -> str:
+def orchestrate(query: str, chat_history: list = None, web_content: str = "", forced_route: str = None) -> str:
     """
     Decides which tool to use and calls the appropriate module.
+    If forced_route is provided, skips the LLM router entirely.
     """
     has_web_context = bool(web_content)
-    route = router(query, has_web_context=has_web_context, chat_history=chat_history)
-    print(f"[Router] → {route}")
+    if forced_route:
+        route = forced_route
+        print(f"[Router] → {route} (forced by frontend)")
+    else:
+        route = router(query, has_web_context=has_web_context, chat_history=chat_history)
+        print(f"[Router] → {route}")
 
     if route == "vector_db":
         # Calls the full Advanced RAG pipeline

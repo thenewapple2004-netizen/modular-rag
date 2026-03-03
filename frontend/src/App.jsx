@@ -1,28 +1,66 @@
 import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Send, Bot, User, Link as LinkIcon, Menu, Plus, MessageSquare, Sun, Moon, Sparkles, Trash2, FileText, Database, Globe } from 'lucide-react';
+import {
+  Send, Bot, User, Link as LinkIcon, Menu, Plus, MessageSquare,
+  Sun, Moon, Sparkles, Trash2, Database, Globe, X, Zap
+} from 'lucide-react';
 import './index.css';
+
+// ── Mode definitions ──────────────────────────────────────────────────────────
+const MODES = {
+  auto: {
+    key: 'auto',
+    label: 'Auto',
+    icon: Zap,
+    color: '#818cf8',
+    placeholder: 'Ask anything…',
+    desc: 'Let the AI decide the best tool automatically',
+  },
+  vector_db: {
+    key: 'vector_db',
+    label: 'Database',
+    icon: Database,
+    color: '#34d399',
+    placeholder: 'Ask a question about your knowledge base…',
+    desc: 'Query directly against your Vector DB documents',
+  },
+  link_reader: {
+    key: 'link_reader',
+    label: 'Webpage',
+    icon: Globe,
+    color: '#60a5fa',
+    placeholder: 'Paste a URL or ask about a loaded page…',
+    desc: 'Paste a URL — I will scrape and answer questions about it',
+  },
+};
 
 function App() {
   const [sessions, setSessions] = useState([
-    {
-      id: 1,
-      title: "New Conversation",
-      messages: []
-    }
+    { id: 1, title: 'New Conversation', messages: [] }
   ]);
   const [currentSessionId, setCurrentSessionId] = useState(1);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
-
-  // Theme management map true = dark, false = light
   const [isDarkTheme, setIsDarkTheme] = useState(true);
+
+  // Mode state
+  const [activeMode, setActiveMode] = useState('auto');
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
+  const pickerRef = useRef(null);
 
-  // Auto-resize textarea as user types
+  const currentSession = sessions.find(s => s.id === currentSessionId);
+  const messages = currentSession?.messages || [];
+
+  // Theme
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', isDarkTheme ? 'dark' : 'light');
+  }, [isDarkTheme]);
+
+  // Auto-resize textarea
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -30,54 +68,45 @@ function App() {
     el.style.height = Math.min(el.scrollHeight, 200) + 'px';
   }, [input]);
 
-  const currentSession = sessions.find(s => s.id === currentSessionId);
-  const messages = currentSession?.messages || [];
-
+  // Close picker on outside click
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', isDarkTheme ? 'dark' : 'light');
-  }, [isDarkTheme]);
+    const handleClick = (e) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target)) {
+        setPickerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
-  // Auto-scroll to bottom of chat
+  // Scroll to bottom
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isLoading]);
+  useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
 
   const createNewChat = () => {
     const newId = Date.now();
-    setSessions([{ id: newId, title: "New Conversation", messages: [] }, ...sessions]);
+    setSessions([{ id: newId, title: 'New Conversation', messages: [] }, ...sessions]);
     setCurrentSessionId(newId);
-    if (window.innerWidth <= 768) {
-      setIsSidebarOpen(false);
-    }
+    if (window.innerWidth <= 768) setIsSidebarOpen(false);
   };
 
   const selectSession = (id) => {
     setCurrentSessionId(id);
-    if (window.innerWidth <= 768) {
-      setIsSidebarOpen(false);
-    }
+    if (window.innerWidth <= 768) setIsSidebarOpen(false);
   };
 
   const deleteSession = (e, id) => {
-    e.stopPropagation(); // Prevent the session from being selected when clicking delete
-
-    const updatedSessions = sessions.filter(s => s.id !== id);
-
-    if (updatedSessions.length === 0) {
-      // If we deleted the last chat, create a brand new empty one
+    e.stopPropagation();
+    const updated = sessions.filter(s => s.id !== id);
+    if (updated.length === 0) {
       const newId = Date.now();
-      setSessions([{ id: newId, title: "New Conversation", messages: [] }]);
+      setSessions([{ id: newId, title: 'New Conversation', messages: [] }]);
       setCurrentSessionId(newId);
     } else {
-      setSessions(updatedSessions);
-      // If we deleted the currently active chat, jump to the first available one
-      if (currentSessionId === id) {
-        setCurrentSessionId(updatedSessions[0].id);
-      }
+      setSessions(updated);
+      if (currentSessionId === id) setCurrentSessionId(updated[0].id);
     }
   };
 
@@ -87,54 +116,53 @@ function App() {
 
     const userQuery = input.trim();
     setInput('');
-    // Reset textarea height after sending
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
 
-    // Auto-generate title for new chats
     let updatedSessions = [...sessions];
     const sessionIndex = updatedSessions.findIndex(s => s.id === currentSessionId);
-
     if (updatedSessions[sessionIndex].messages.length === 0) {
-      updatedSessions[sessionIndex].title = userQuery.slice(0, 30) + (userQuery.length > 30 ? '...' : '');
+      updatedSessions[sessionIndex].title = userQuery.slice(0, 30) + (userQuery.length > 30 ? '…' : '');
     }
 
-    const newMessages = [...updatedSessions[sessionIndex].messages, { role: 'user', content: userQuery }];
+    // Tag user message with the mode used
+    const newMessages = [
+      ...updatedSessions[sessionIndex].messages,
+      { role: 'user', content: userQuery, mode: activeMode }
+    ];
     updatedSessions[sessionIndex].messages = newMessages;
     setSessions(updatedSessions);
     setIsLoading(true);
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || "https://modular-rag-backend-xec0.onrender.com";
+      const API_URL = import.meta.env.VITE_API_URL || 'https://modular-rag-backend-xec0.onrender.com';
       const response = await fetch(`${API_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: userQuery,
           chat_history: newMessages.slice(0, -1).map(m => ({ role: m.role, content: m.content })),
-          web_content: [...newMessages].reverse().find(m => m.web_content)?.web_content || ""
+          web_content: [...newMessages].reverse().find(m => m.web_content)?.web_content || '',
+          mode: activeMode,
         })
       });
 
-      if (!response.ok) throw new Error(`Server Error`);
-
+      if (!response.ok) throw new Error('Server Error');
       const data = await response.json();
 
-      const sessionIndexAfter = sessions.findIndex(s => s.id === currentSessionId);
       let newSessions = [...sessions];
-      newSessions[sessionIndexAfter].messages = [
-        ...newSessions[sessionIndexAfter].messages,
+      const idxAfter = newSessions.findIndex(s => s.id === currentSessionId);
+      newSessions[idxAfter].messages = [
+        ...newSessions[idxAfter].messages,
         { role: 'assistant', content: data.answer, web_content: data.web_content }
       ];
       setSessions(newSessions);
-
     } catch (err) {
       console.error(err);
       let newSessions = [...sessions];
-      newSessions[sessionIndex].messages = [
-        ...newSessions[sessionIndex].messages,
-        { role: 'assistant', content: "Error: Failed to reach the RAG backend. Is the Python API running?" }
+      const idx = newSessions.findIndex(s => s.id === currentSessionId);
+      newSessions[idx].messages = [
+        ...newSessions[idx].messages,
+        { role: 'assistant', content: 'Error: Failed to reach the RAG backend. Is the Python API running?' }
       ];
       setSessions(newSessions);
     } finally {
@@ -142,13 +170,13 @@ function App() {
     }
   };
 
+  const ModeIcon = MODES[activeMode].icon;
+  const modeColor = MODES[activeMode].color;
+
   return (
     <div className="app-layout">
-      {/* Mobile Overlay */}
-      <div
-        className={`sidebar-overlay ${isSidebarOpen ? 'active' : ''}`}
-        onClick={() => setIsSidebarOpen(false)}
-      ></div>
+      {/* Mobile overlay */}
+      <div className={`sidebar-overlay ${isSidebarOpen ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)} />
 
       {/* Sidebar */}
       <div className={`sidebar ${!isSidebarOpen ? 'closed' : ''}`}>
@@ -167,11 +195,7 @@ function App() {
                 <MessageSquare size={16} />
                 <span className="history-title">{session.title}</span>
               </div>
-              <button
-                className="delete-chat-btn"
-                onClick={(e) => deleteSession(e, session.id)}
-                title="Delete Chat"
-              >
+              <button className="delete-chat-btn" onClick={(e) => deleteSession(e, session.id)} title="Delete">
                 <Trash2 size={14} />
               </button>
             </div>
@@ -186,13 +210,19 @@ function App() {
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Main */}
       <div className="main-content">
         <header className="header">
           <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="icon-btn">
             <Menu size={20} />
           </button>
           <div className="header-title">Modular RAG</div>
+
+          {/* Active mode badge in header */}
+          <div className="header-mode-badge" style={{ '--mode-color': modeColor }}>
+            <ModeIcon size={13} />
+            {MODES[activeMode].label}
+          </div>
         </header>
 
         <div className="chat-area">
@@ -202,25 +232,25 @@ function App() {
                 <Sparkles size={32} color="var(--accent)" />
               </div>
               <h2>Welcome to Modular RAG</h2>
-              <p>Here are a few things I can help you with right now:</p>
+              <p>Select a mode with the <strong>+</strong> button in the chat bar below, then start typing.</p>
 
               <div className="empty-state-guide">
-                <div className="guide-card" onClick={() => setInput("What is reinforcement learning?")}>
-                  <Database className="guide-icon" size={24} />
-                  <div className="guide-title">Query your Data</div>
-                  <div className="guide-desc">Ask questions directly against the knowledge base loaded in your Vector DB.</div>
+                <div className="guide-card" onClick={() => { setActiveMode('auto'); textareaRef.current?.focus(); }}>
+                  <Zap className="guide-icon" size={24} style={{ color: MODES.auto.color }} />
+                  <div className="guide-title">Auto Mode</div>
+                  <div className="guide-desc">Let the AI automatically pick the best tool — DB, web scraper, or search — for every query.</div>
                 </div>
 
-                <div className="guide-card" onClick={() => setInput("https://en.wikipedia.org/wiki/Artificial_intelligence")}>
-                  <Globe className="guide-icon" size={24} />
-                  <div className="guide-title">Analyze any Webpage</div>
-                  <div className="guide-desc">Just paste any URL link into the chat! I will instantly scrape it and summarize it.</div>
+                <div className="guide-card" onClick={() => { setActiveMode('vector_db'); textareaRef.current?.focus(); }}>
+                  <Database className="guide-icon" size={24} style={{ color: MODES.vector_db.color }} />
+                  <div className="guide-title">Database Mode</div>
+                  <div className="guide-desc">Force every query directly into your Vector DB. Perfect for document-specific Q&A.</div>
                 </div>
 
-                <div className="guide-card" onClick={() => setInput("Can you summarize the second point you made?")}>
-                  <MessageSquare className="guide-icon" size={24} />
-                  <div className="guide-title">Advanced Memory</div>
-                  <div className="guide-desc">I automatically remember all past turns. Ask as many conversational follow-up questions as you want.</div>
+                <div className="guide-card" onClick={() => { setActiveMode('link_reader'); textareaRef.current?.focus(); }}>
+                  <Globe className="guide-icon" size={24} style={{ color: MODES.link_reader.color }} />
+                  <div className="guide-title">Webpage Mode</div>
+                  <div className="guide-desc">Paste a URL and ask questions. I will scrape and analyze the page instantly.</div>
                 </div>
               </div>
             </div>
@@ -228,14 +258,21 @@ function App() {
             messages.map((msg, idx) => (
               <div key={idx} className={`message-row ${msg.role}`}>
                 <div className="message-content">
-                  <div className={`avatar ${msg.role}`}>
+                  <div className={`avatar ${msg.role === 'assistant' ? 'bot' : 'user'}`}>
                     {msg.role === 'assistant' ? <Bot size={20} /> : <User size={20} />}
                   </div>
                   <div className="message-text">
+                    {/* Show mode chip on user messages */}
+                    {msg.role === 'user' && msg.mode && msg.mode !== 'auto' && (
+                      <div className="mode-chip" style={{ '--chip-color': MODES[msg.mode]?.color || 'var(--accent)' }}>
+                        {msg.mode === 'vector_db' ? <Database size={11} /> : <Globe size={11} />}
+                        {MODES[msg.mode]?.label}
+                      </div>
+                    )}
                     <ReactMarkdown>{msg.content}</ReactMarkdown>
-                    {msg.role === 'assistant' && msg.web_content && msg.content.includes('HTML content of the webpage') && (
+                    {msg.role === 'assistant' && msg.web_content && (
                       <div className="url-badge">
-                        <LinkIcon size={14} /> Webpage loaded into Context Window
+                        <LinkIcon size={14} /> Webpage loaded into context
                       </div>
                     )}
                   </div>
@@ -250,9 +287,7 @@ function App() {
                 <div className="avatar bot"><Bot size={20} /></div>
                 <div className="message-text">
                   <div className="typing-indicator">
-                    <div className="typing-dot"></div>
-                    <div className="typing-dot"></div>
-                    <div className="typing-dot"></div>
+                    <div className="typing-dot" /><div className="typing-dot" /><div className="typing-dot" />
                   </div>
                 </div>
               </div>
@@ -261,28 +296,82 @@ function App() {
           <div ref={messagesEndRef} />
         </div>
 
+        {/* ── Input area ─────────────────────────────────────────── */}
         <div className="input-area">
-          <form onSubmit={handleSend} className="input-container">
-            <textarea
-              ref={textareaRef}
-              className="chat-input"
-              placeholder="Message Modular RAG..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-              rows={1}
-              disabled={isLoading}
-              autoFocus
-            />
-            <button type="submit" className="send-btn" disabled={!input.trim() || isLoading}>
-              <Send size={18} />
-            </button>
-          </form>
+          <div className="input-wrapper">
+
+            {/* Mode picker popup */}
+            {pickerOpen && (
+              <div className="mode-picker" ref={pickerRef}>
+                <div className="mode-picker-header">
+                  <span>Choose mode</span>
+                  <button className="mode-picker-close" onClick={() => setPickerOpen(false)}><X size={14} /></button>
+                </div>
+                {Object.values(MODES).map(m => {
+                  const Icon = m.icon;
+                  return (
+                    <button
+                      key={m.key}
+                      className={`mode-option ${activeMode === m.key ? 'selected' : ''}`}
+                      style={{ '--opt-color': m.color }}
+                      onClick={() => { setActiveMode(m.key); setPickerOpen(false); textareaRef.current?.focus(); }}
+                    >
+                      <div className="mode-option-icon"><Icon size={16} /></div>
+                      <div className="mode-option-text">
+                        <span className="mode-option-label">{m.label}</span>
+                        <span className="mode-option-desc">{m.desc}</span>
+                      </div>
+                      {activeMode === m.key && <div className="mode-option-check">✓</div>}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            <form onSubmit={handleSend} className="input-container">
+              {/* Active mode indicator inside input */}
+              {activeMode !== 'auto' && (
+                <div className="active-mode-chip" style={{ '--chip-color': modeColor }}>
+                  <ModeIcon size={12} />
+                  <span>{MODES[activeMode].label}</span>
+                  <button type="button" onClick={() => setActiveMode('auto')} className="chip-remove" title="Reset to Auto">
+                    <X size={10} />
+                  </button>
+                </div>
+              )}
+
+              <div className="input-row">
+                {/* + button */}
+                <button
+                  type="button"
+                  className={`plus-btn ${pickerOpen ? 'open' : ''}`}
+                  onClick={() => setPickerOpen(p => !p)}
+                  title="Choose mode"
+                  style={{ '--mode-color': modeColor }}
+                >
+                  <Plus size={18} />
+                </button>
+
+                <textarea
+                  ref={textareaRef}
+                  className="chat-input"
+                  placeholder={MODES[activeMode].placeholder}
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+                  }}
+                  rows={1}
+                  disabled={isLoading}
+                  autoFocus
+                />
+
+                <button type="submit" className="send-btn" disabled={!input.trim() || isLoading}>
+                  <Send size={18} />
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>

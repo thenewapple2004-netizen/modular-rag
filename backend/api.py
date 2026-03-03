@@ -46,6 +46,7 @@ try:
         query: str
         chat_history: List[Dict[str, str]] = []
         web_content: Optional[str] = ""
+        mode: Optional[str] = "auto"  # "auto" | "vector_db" | "link_reader"
 
     class ChatResponse(BaseModel):
         answer: str
@@ -74,7 +75,8 @@ try:
             response = orchestrate(
                 query=user_query, 
                 chat_history=request.chat_history, 
-                web_content=active_web_content
+                web_content=active_web_content,
+                forced_route=request.mode if request.mode in ("vector_db", "link_reader") else None
             )
             
             return ChatResponse(
