@@ -222,7 +222,12 @@ function App() {
           <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="icon-btn">
             <Menu size={20} />
           </button>
-          <div className="header-title">Modular RAG</div>
+
+          {/* Centered title block */}
+          <div className="header-center">
+            <div className="header-title">Modular RAG</div>
+            <div className="header-topic">Reinforcement Learning</div>
+          </div>
 
           {/* Active mode badge in header — only when not auto */}
           {activeMode !== 'auto' && ModeIcon && (
