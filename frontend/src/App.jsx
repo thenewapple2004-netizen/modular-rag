@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { Send, Bot, User, Link as LinkIcon, Menu, Plus, MessageSquare, Sun, Moon, Sparkles, Trash2 } from 'lucide-react';
 import './index.css';
 
@@ -191,7 +192,7 @@ function App() {
                     {msg.role === 'assistant' ? <Bot size={20} /> : <User size={20} />}
                   </div>
                   <div className="message-text">
-                    {msg.content}
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
                     {msg.role === 'assistant' && msg.web_content && msg.content.includes('HTML content of the webpage') && (
                       <div className="url-badge">
                         <LinkIcon size={14} /> Webpage loaded into Context Window
