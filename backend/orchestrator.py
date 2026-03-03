@@ -20,7 +20,7 @@ def orchestrate(query: str, chat_history: list = None, web_content: str = "") ->
     Decides which tool to use and calls the appropriate module.
     """
     has_web_context = bool(web_content)
-    route = router(query, has_web_context=has_web_context)
+    route = router(query, has_web_context=has_web_context, chat_history=chat_history)
     print(f"[Router] → {route}")
 
     if route == "vector_db":
