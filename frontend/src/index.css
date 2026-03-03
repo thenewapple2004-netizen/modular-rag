@@ -46,11 +46,12 @@ body {
   color: var(--text-main);
   transition: background-color 0.3s ease, color 0.3s ease;
   overflow: hidden;
+  overscroll-behavior-y: none;
   /* Prevent body scroll to behave like an app */
 }
 
 #root {
-  height: 100vh;
+  height: 100dvh;
   display: flex;
 }
 
@@ -58,7 +59,9 @@ body {
 .app-layout {
   display: flex;
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
+  position: relative;
+  overflow: hidden;
 }
 
 /* Sidebar */
@@ -67,8 +70,8 @@ body {
   background-color: var(--bg-sidebar);
   display: flex;
   flex-direction: column;
-  transition: all 0.3s ease;
-  z-index: 10;
+  transition: transform 0.3s ease, width 0.3s ease;
+  z-index: 20;
 }
 
 .sidebar.closed {
@@ -76,16 +79,37 @@ body {
   overflow: hidden;
 }
 
+/* Mobile Sidebar Overlay */
+.sidebar-overlay {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 15;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  backdrop-filter: blur(2px);
+}
+
+.sidebar-overlay.active {
+  display: block;
+  opacity: 1;
+}
+
 @media (max-width: 768px) {
   .sidebar {
     position: absolute;
     height: 100%;
     transform: translateX(0);
+    width: 260px;
+    /* Force width, toggle uses transform */
   }
 
   .sidebar.closed {
     transform: translateX(-100%);
-    width: 260px;
   }
 }
 

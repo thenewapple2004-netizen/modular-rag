@@ -14,7 +14,7 @@ function App() {
   const [currentSessionId, setCurrentSessionId] = useState(1);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
 
   // Theme management map true = dark, false = light
   const [isDarkTheme, setIsDarkTheme] = useState(true);
@@ -131,6 +131,12 @@ function App() {
 
   return (
     <div className="app-layout">
+      {/* Mobile Overlay */}
+      <div
+        className={`sidebar-overlay ${isSidebarOpen ? 'active' : ''}`}
+        onClick={() => setIsSidebarOpen(false)}
+      ></div>
+
       {/* Sidebar */}
       <div className={`sidebar ${!isSidebarOpen ? 'closed' : ''}`}>
         <button onClick={createNewChat} className="new-chat-btn">
