@@ -20,6 +20,15 @@ function App() {
   const [isDarkTheme, setIsDarkTheme] = useState(true);
 
   const messagesEndRef = useRef(null);
+  const textareaRef = useRef(null);
+
+  // Auto-resize textarea as user types
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+  }, [input]);
 
   const currentSession = sessions.find(s => s.id === currentSessionId);
   const messages = currentSession?.messages || [];
@@ -78,6 +87,10 @@ function App() {
 
     const userQuery = input.trim();
     setInput('');
+    // Reset textarea height after sending
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
 
     // Auto-generate title for new chats
     let updatedSessions = [...sessions];
@@ -251,6 +264,7 @@ function App() {
         <div className="input-area">
           <form onSubmit={handleSend} className="input-container">
             <textarea
+              ref={textareaRef}
               className="chat-input"
               placeholder="Message Modular RAG..."
               value={input}
