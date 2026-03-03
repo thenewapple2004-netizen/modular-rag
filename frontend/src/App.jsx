@@ -2,35 +2,27 @@ import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import {
   Send, Bot, User, Link as LinkIcon, Menu, Plus, MessageSquare,
-  Sun, Moon, Sparkles, Trash2, Database, Globe, X, Zap
+  Sun, Moon, Sparkles, Trash2, Database, Globe, X
 } from 'lucide-react';
 import './index.css';
 
-// ── Mode definitions ──────────────────────────────────────────────────────────
+// ── Mode definitions (auto is the silent default — not shown in picker) ────────
 const MODES = {
-  auto: {
-    key: 'auto',
-    label: 'Auto',
-    icon: Zap,
-    color: '#818cf8',
-    placeholder: 'Ask anything…',
-    desc: 'Let the AI decide the best tool automatically',
-  },
   vector_db: {
     key: 'vector_db',
-    label: 'Database',
+    label: 'Vector DB',
     icon: Database,
     color: '#34d399',
     placeholder: 'Ask a question about your knowledge base…',
-    desc: 'Query directly against your Vector DB documents',
+    desc: 'Search your uploaded documents',
   },
   link_reader: {
     key: 'link_reader',
-    label: 'Webpage',
+    label: 'Webpage Link',
     icon: Globe,
     color: '#60a5fa',
     placeholder: 'Paste a URL or ask about a loaded page…',
-    desc: 'Paste a URL — I will scrape and answer questions about it',
+    desc: 'Scrape and analyse any webpage',
   },
 };
 
@@ -170,8 +162,10 @@ function App() {
     }
   };
 
-  const ModeIcon = MODES[activeMode].icon;
-  const modeColor = MODES[activeMode].color;
+  // Derived from active mode (fallback gracefully to auto)
+  const activeModeDef = MODES[activeMode];
+  const ModeIcon = activeModeDef?.icon || null;
+  const modeColor = activeModeDef?.color || 'var(--accent)';
 
   return (
     <div className="app-layout">
@@ -218,11 +212,13 @@ function App() {
           </button>
           <div className="header-title">Modular RAG</div>
 
-          {/* Active mode badge in header */}
-          <div className="header-mode-badge" style={{ '--mode-color': modeColor }}>
-            <ModeIcon size={13} />
-            {MODES[activeMode].label}
-          </div>
+          {/* Active mode badge in header — only when not auto */}
+          {activeMode !== 'auto' && (
+            <div className="header-mode-badge" style={{ '--mode-color': modeColor }}>
+              <ModeIcon size={13} />
+              {MODES[activeMode].label}
+            </div>
+          )}
         </header>
 
         <div className="chat-area">
@@ -235,22 +231,22 @@ function App() {
               <p>Select a mode with the <strong>+</strong> button in the chat bar below, then start typing.</p>
 
               <div className="empty-state-guide">
-                <div className="guide-card" onClick={() => { setActiveMode('auto'); textareaRef.current?.focus(); }}>
-                  <Zap className="guide-icon" size={24} style={{ color: MODES.auto.color }} />
-                  <div className="guide-title">Auto Mode</div>
-                  <div className="guide-desc">Let the AI automatically pick the best tool — DB, web scraper, or search — for every query.</div>
-                </div>
-
                 <div className="guide-card" onClick={() => { setActiveMode('vector_db'); textareaRef.current?.focus(); }}>
                   <Database className="guide-icon" size={24} style={{ color: MODES.vector_db.color }} />
-                  <div className="guide-title">Database Mode</div>
-                  <div className="guide-desc">Force every query directly into your Vector DB. Perfect for document-specific Q&A.</div>
+                  <div className="guide-title">Query your Data</div>
+                  <div className="guide-desc">Pin Vector DB mode from the + button and ask questions directly against your uploaded documents.</div>
                 </div>
 
                 <div className="guide-card" onClick={() => { setActiveMode('link_reader'); textareaRef.current?.focus(); }}>
                   <Globe className="guide-icon" size={24} style={{ color: MODES.link_reader.color }} />
-                  <div className="guide-title">Webpage Mode</div>
-                  <div className="guide-desc">Paste a URL and ask questions. I will scrape and analyze the page instantly.</div>
+                  <div className="guide-title">Analyse any Webpage</div>
+                  <div className="guide-desc">Pin Webpage Link mode, paste any URL, and ask questions — I'll scrape and summarise it instantly.</div>
+                </div>
+
+                <div className="guide-card">
+                  <MessageSquare className="guide-icon" size={24} style={{ color: 'var(--accent)' }} />
+                  <div className="guide-title">Auto (Default)</div>
+                  <div className="guide-desc">Leave the mode unpinned and the AI will automatically route each query to the best tool.</div>
                 </div>
               </div>
             </div>
@@ -300,28 +296,30 @@ function App() {
         <div className="input-area">
           <div className="input-wrapper">
 
-            {/* Mode picker popup */}
+            {/* Mode picker popup — only 2 options, no header */}
             {pickerOpen && (
               <div className="mode-picker" ref={pickerRef}>
-                <div className="mode-picker-header">
-                  <span>Choose mode</span>
-                  <button className="mode-picker-close" onClick={() => setPickerOpen(false)}><X size={14} /></button>
-                </div>
                 {Object.values(MODES).map(m => {
                   const Icon = m.icon;
+                  const isSelected = activeMode === m.key;
                   return (
                     <button
                       key={m.key}
-                      className={`mode-option ${activeMode === m.key ? 'selected' : ''}`}
+                      className={`mode-option ${isSelected ? 'selected' : ''}`}
                       style={{ '--opt-color': m.color }}
-                      onClick={() => { setActiveMode(m.key); setPickerOpen(false); textareaRef.current?.focus(); }}
+                      onClick={() => {
+                        // Toggle: clicking the active one goes back to auto
+                        setActiveMode(isSelected ? 'auto' : m.key);
+                        setPickerOpen(false);
+                        textareaRef.current?.focus();
+                      }}
                     >
                       <div className="mode-option-icon"><Icon size={16} /></div>
                       <div className="mode-option-text">
                         <span className="mode-option-label">{m.label}</span>
                         <span className="mode-option-desc">{m.desc}</span>
                       </div>
-                      {activeMode === m.key && <div className="mode-option-check">✓</div>}
+                      {isSelected && <div className="mode-option-check">✓</div>}
                     </button>
                   );
                 })}
