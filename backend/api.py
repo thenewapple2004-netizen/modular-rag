@@ -3,10 +3,14 @@ import os
 
 # --- Render Deployment SQLite Override ---
 # ChromaDB requires SQLite > 3.35, but Render Linux often has an older version.
-# This forces the app to use the modern pysqlite3-binary we installed!
+# This forces the app to use the modern pysqlite3-binary if installed.
 if os.name == 'posix':
-    __import__('pysqlite3')
-    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+    try:
+        import pysqlite3
+        import sys
+        sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+    except ImportError:
+        pass
 # ----------------------------------------
 
 import re
