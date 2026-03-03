@@ -61,6 +61,19 @@ try:
             # ── Vector DB mode ────────────────────────────────────────────────
             # Only query documents. URLs are treated as plain text — never scraped.
             if mode == "vector_db":
+                # If the user pastes a URL in this mode, explain the limitation clearly
+                url_match = re.search(r'(https?://[^\s]+)', user_query)
+                if url_match and not user_query.replace(url_match.group(1), '').strip():
+                    return ChatResponse(
+                        answer=(
+                            "🗄️ **You're in Vector DB mode.** I can only answer questions from your "
+                            "uploaded documents — I'm not able to read external links in this mode.\n\n"
+                            "To analyse a webpage, switch to **Webpage Link** mode using the **+** button "
+                            "in the chat bar, then paste your URL."
+                        ),
+                        web_content=""
+                    )
+
                 response = orchestrate(
                     query=user_query,
                     chat_history=request.chat_history,
@@ -68,6 +81,7 @@ try:
                     forced_route="vector_db"
                 )
                 return ChatResponse(answer=response, web_content="")
+
 
             # ── Webpage Link mode ─────────────────────────────────────────────
             # Always try to scrape a URL if present; answer only from that page.
