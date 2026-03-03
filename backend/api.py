@@ -56,33 +56,66 @@ try:
     async def chat_endpoint(request: ChatRequest):
         try:
             user_query = request.query
-            active_web_content = request.web_content
+            mode = request.mode or "auto"
 
-            url_match = re.search(r'(https?://[^\s]+)', user_query)
-            if url_match:
-                url = url_match.group(1)
-                active_web_content = scrape_url(url)
-                
-                clean_query = user_query.replace(url, '').strip()
-                if not clean_query:
-                    return ChatResponse(
-                        answer="I have read the HTML content of the webpage and stored it in memory. What would you like to know about it?",
-                        web_content=active_web_content
-                    )
-                else:
+            # ── Vector DB mode ────────────────────────────────────────────────
+            # Only query documents. URLs are treated as plain text — never scraped.
+            if mode == "vector_db":
+                response = orchestrate(
+                    query=user_query,
+                    chat_history=request.chat_history,
+                    web_content="",          # never pass web content in DB mode
+                    forced_route="vector_db"
+                )
+                return ChatResponse(answer=response, web_content="")
+
+            # ── Webpage Link mode ─────────────────────────────────────────────
+            # Always try to scrape a URL if present; answer only from that page.
+            elif mode == "link_reader":
+                active_web_content = request.web_content or ""
+                url_match = re.search(r'(https?://[^\s]+)', user_query)
+                if url_match:
+                    url = url_match.group(1)
+                    active_web_content = scrape_url(url)
+                    clean_query = user_query.replace(url, '').strip()
+                    if not clean_query:
+                        return ChatResponse(
+                            answer="I have read the HTML content of the webpage and stored it in memory. What would you like to know about it?",
+                            web_content=active_web_content
+                        )
                     user_query = clean_query
 
-            response = orchestrate(
-                query=user_query, 
-                chat_history=request.chat_history, 
-                web_content=active_web_content,
-                forced_route=request.mode if request.mode in ("vector_db", "link_reader") else None
-            )
-            
-            return ChatResponse(
-                answer=response,
-                web_content=active_web_content
-            )
+                response = orchestrate(
+                    query=user_query,
+                    chat_history=request.chat_history,
+                    web_content=active_web_content,
+                    forced_route="link_reader"
+                )
+                return ChatResponse(answer=response, web_content=active_web_content)
+
+            # ── Auto mode (default) ───────────────────────────────────────────
+            # Scrape URL if found, then let the AI router pick the right tool.
+            else:
+                active_web_content = request.web_content or ""
+                url_match = re.search(r'(https?://[^\s]+)', user_query)
+                if url_match:
+                    url = url_match.group(1)
+                    active_web_content = scrape_url(url)
+                    clean_query = user_query.replace(url, '').strip()
+                    if not clean_query:
+                        return ChatResponse(
+                            answer="I have read the HTML content of the webpage and stored it in memory. What would you like to know about it?",
+                            web_content=active_web_content
+                        )
+                    user_query = clean_query
+
+                response = orchestrate(
+                    query=user_query,
+                    chat_history=request.chat_history,
+                    web_content=active_web_content,
+                    forced_route=None          # let the AI router decide
+                )
+                return ChatResponse(answer=response, web_content=active_web_content)
 
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
