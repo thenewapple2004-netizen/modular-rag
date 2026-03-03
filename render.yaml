@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: modular-rag-backend
+    env: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python api.py
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: PYTHON_VERSION
+        value: 3.10.12
+      - key: GROQ_API_KEY
+        sync: false
+
+  # React Frontend UI
+  - type: web
+    name: modular-rag-frontend
+    env: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: modular-rag-backend
+          envVarKey: RENDER_EXTERNAL_URL

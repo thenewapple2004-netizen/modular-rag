@@ -1,5 +1,14 @@
 import sys
 import os
+
+# --- Render Deployment SQLite Override ---
+# ChromaDB requires SQLite > 3.35, but Render Linux often has an older version.
+# This forces the app to use the modern pysqlite3-binary we installed!
+if os.name == 'posix':
+    __import__('pysqlite3')
+    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+# ----------------------------------------
+
 import re
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -76,4 +85,5 @@ async def chat_endpoint(request: ChatRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
