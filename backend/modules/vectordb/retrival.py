@@ -7,8 +7,12 @@ def get_context(user_query):
     chroma_client = chromadb.PersistentClient(path=db_path)
     collection = chroma_client.get_or_create_collection(name="my-collection")
 
-    context = collection.query(
+    results = collection.query(
         query_texts=[user_query],
         n_results=5
     )
-    return "\n".join(context["documents"][0])
+    docs = results["documents"][0]
+    distances = results["distances"][0]  # lower = more similar
+    context_text = "\n".join(docs)
+    best_distance = min(distances) if distances else 999
+    return context_text, best_distance
