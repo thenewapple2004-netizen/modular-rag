@@ -462,3 +462,50 @@ body {
   color: var(--text-main);
   font-weight: 600;
 }
+
+.empty-state-guide {
+  width: 100%;
+  max-width: 750px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.guide-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.guide-card:hover {
+  border-color: var(--accent);
+  background-color: var(--bg-sidebar-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.guide-icon {
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.guide-title {
+  color: var(--text-main);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.guide-desc {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}

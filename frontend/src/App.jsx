@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Send, Bot, User, Link as LinkIcon, Menu, Plus, MessageSquare, Sun, Moon, Sparkles, Trash2 } from 'lucide-react';
+import { Send, Bot, User, Link as LinkIcon, Menu, Plus, MessageSquare, Sun, Moon, Sparkles, Trash2, FileText, Database, Globe } from 'lucide-react';
 import './index.css';
 
 function App() {
@@ -182,8 +182,28 @@ function App() {
               <div className="empty-state-icon">
                 <Sparkles size={32} color="var(--accent)" />
               </div>
-              <h2>How can I help you today?</h2>
-              <p>Ask a question about your VectorDB or paste a URL to analyze.</p>
+              <h2>Welcome to Modular RAG</h2>
+              <p>Here are a few things I can help you with right now:</p>
+
+              <div className="empty-state-guide">
+                <div className="guide-card" onClick={() => setInput("What is reinforcement learning?")}>
+                  <Database className="guide-icon" size={24} />
+                  <div className="guide-title">Query your Data</div>
+                  <div className="guide-desc">Ask questions directly against the knowledge base loaded in your Vector DB.</div>
+                </div>
+
+                <div className="guide-card" onClick={() => setInput("https://en.wikipedia.org/wiki/Artificial_intelligence")}>
+                  <Globe className="guide-icon" size={24} />
+                  <div className="guide-title">Analyze any Webpage</div>
+                  <div className="guide-desc">Just paste any URL link into the chat! I will instantly scrape it and summarize it.</div>
+                </div>
+
+                <div className="guide-card" onClick={() => setInput("Can you summarize the second point you made?")}>
+                  <MessageSquare className="guide-icon" size={24} />
+                  <div className="guide-title">Advanced Memory</div>
+                  <div className="guide-desc">I automatically remember all past turns. Ask as many conversational follow-up questions as you want.</div>
+                </div>
+              </div>
             </div>
           ) : (
             messages.map((msg, idx) => (
