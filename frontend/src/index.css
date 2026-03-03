@@ -3,35 +3,38 @@
 :root {
   --bg-primary: #ffffff;
   --bg-secondary: #f3f4f6;
-  --bg-sidebar: #171717;
-  --bg-sidebar-hover: #262626;
-  --text-main: #0f0f0f;
+  --bg-sidebar: #111827;
+  --bg-sidebar-hover: #1f2937;
+  --text-main: #111827;
   --text-muted: #6b7280;
-  --text-sidebar: #ececf1;
+  --text-sidebar: #f9fafb;
   --border: #e5e7eb;
-  --border-sidebar: #333333;
-  --accent: #10a37f;
-  --accent-hover: #0b8c6d;
-  --msg-user: #f3f4f6;
+  --border-sidebar: #374151;
+  --accent: #7c3aed;
+  --accent-hover: #6d28d9;
+  --accent-glow: rgba(124, 58, 237, 0.35);
+  --msg-user: #f9fafb;
   --msg-bot: #ffffff;
-  --radius-lg: 12px;
-  --radius-md: 8px;
+  --radius-lg: 14px;
+  --radius-md: 10px;
 }
 
 [data-theme='dark'] {
-  --bg-primary: #343541;
-  --bg-secondary: #40414f;
-  --bg-sidebar: #202123;
-  --bg-sidebar-hover: #2a2b32;
-  --text-main: #ececf1;
-  --text-muted: #8e8ea0;
-  --text-sidebar: #ececf1;
-  --border: #4d4d4f;
-  --border-sidebar: #4d4d4f;
-  --accent: #10a37f;
-  --accent-hover: #0b8c6d;
-  --msg-user: #343541;
-  --msg-bot: #444654;
+  --bg-primary: #0f1117;
+  --bg-secondary: #151b28;
+  --bg-sidebar: #0a0d14;
+  --bg-sidebar-hover: #131929;
+  --text-main: #e8eaf6;
+  --text-muted: #7986cb;
+  --text-sidebar: #e8eaf6;
+  --border: #1e2a45;
+  --border-sidebar: #1e2a45;
+  --accent: #818cf8;
+  --accent-hover: #6366f1;
+  --accent-glow: rgba(129, 140, 248, 0.4);
+  --msg-user: #111827;
+  --msg-bot-from: #131929;
+  --msg-bot-to: #0f1117;
 }
 
 * {
@@ -118,19 +121,21 @@ body {
   align-items: center;
   gap: 12px;
   margin: 16px;
-  padding: 12px;
+  padding: 12px 16px;
   border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(129, 140, 248, 0.25);
   background: transparent;
   color: var(--text-sidebar);
   font-family: inherit;
   font-size: 0.95rem;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 
 .new-chat-btn:hover {
   background: var(--bg-sidebar-hover);
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .history-list {
@@ -303,6 +308,12 @@ body {
   border-top: 1px solid var(--border);
 }
 
+[data-theme='dark'] .message-row.assistant {
+  background: linear-gradient(135deg, var(--msg-bot-from, #131929) 0%, var(--msg-bot-to, #0f1117) 100%);
+  border-top: 1px solid rgba(129, 140, 248, 0.12);
+  border-bottom: 1px solid rgba(129, 140, 248, 0.08);
+}
+
 .message-row.user {
   background-color: var(--bg-primary);
 }
@@ -331,13 +342,15 @@ body {
 }
 
 .avatar.user {
-  background-color: #3b82f6;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
   color: white;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
 }
 
 .avatar.bot {
-  background-color: var(--accent);
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
   color: white;
+  box-shadow: 0 0 12px var(--accent-glow);
 }
 
 .message-text {
@@ -350,69 +363,282 @@ body {
 
 /* Input Area */
 .input-area {
-  padding: 24px;
+  padding: 16px 24px 24px;
   display: flex;
   justify-content: center;
-  background: linear-gradient(180deg, transparent, var(--bg-primary) 20%);
+  background: linear-gradient(180deg, transparent, var(--bg-primary) 15%);
 }
 
-.input-container {
+.input-wrapper {
   max-width: 800px;
   width: 100%;
   position: relative;
   display: flex;
   flex-direction: column;
-  background-color: var(--bg-primary);
+}
+
+.input-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
-  transition: box-shadow 0.2s, border-color 0.2s;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.25s, border-color 0.25s;
+  overflow: hidden;
 }
 
 .input-container:focus-within {
-  border-color: var(--text-muted);
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow), 0 4px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Row inside the form: + btn, textarea, send btn */
+.input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+  padding: 8px 10px 8px 6px;
 }
 
 .chat-input {
-  width: 100%;
+  flex: 1;
   border: none;
   background: transparent;
   color: var(--text-main);
-  padding: 16px 56px 16px 16px;
+  padding: 8px 10px;
   font-size: 1rem;
   font-family: inherit;
   outline: none;
   resize: none;
   max-height: 200px;
-  min-height: 56px;
+  min-height: 40px;
+  overflow-y: auto;
+  line-height: 1.6;
+  transition: height 0.1s ease;
+  align-self: center;
 }
 
-.send-btn {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  width: 32px;
-  height: 32px;
-  background-color: var(--accent);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
+/* + button */
+.plus-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.2s;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  margin-right: 4px;
+  align-self: flex-end;
+  margin-bottom: 2px;
+}
+
+.plus-btn:hover,
+.plus-btn.open {
+  border-color: var(--mode-color, var(--accent));
+  color: var(--mode-color, var(--accent));
+  background: color-mix(in srgb, var(--mode-color, var(--accent)) 10%, transparent);
+  transform: rotate(45deg);
+}
+
+.plus-btn.open {
+  transform: rotate(45deg);
+}
+
+/* Send button */
+.send-btn {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  color: white;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s;
+  box-shadow: 0 2px 10px var(--accent-glow);
+  align-self: flex-end;
+  margin-bottom: 2px;
+  margin-left: 4px;
 }
 
 .send-btn:hover:not(:disabled) {
-  background-color: var(--accent-hover);
+  background: linear-gradient(135deg, var(--accent-hover), #4f46e5);
+  transform: scale(1.1);
+  box-shadow: 0 4px 16px var(--accent-glow);
 }
 
 .send-btn:disabled {
-  background-color: var(--border);
+  background: var(--border);
   color: var(--text-muted);
   cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Active mode chip INSIDE input */
+.active-mode-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 8px;
+  margin: 8px 10px 0 10px;
+  background: color-mix(in srgb, var(--chip-color) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--chip-color) 35%, transparent);
+  border-radius: 20px;
+  color: var(--chip-color);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  width: fit-content;
+}
+
+.chip-remove {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  margin-left: 2px;
+}
+
+.chip-remove:hover {
+  opacity: 1;
+}
+
+/* Mode picker popup */
+.mode-picker {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 0;
+  width: 240px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  z-index: 50;
+  overflow: hidden;
+  padding: 6px;
+  animation: popIn 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+
+.mode-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+  color: var(--text-main);
+  font-family: inherit;
+  position: relative;
+}
+
+.mode-option:hover {
+  background: color-mix(in srgb, var(--opt-color) 8%, transparent);
+}
+
+.mode-option.selected {
+  background: color-mix(in srgb, var(--opt-color) 12%, transparent);
+}
+
+.mode-option-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--opt-color) 16%, transparent);
+  color: var(--opt-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid color-mix(in srgb, var(--opt-color) 25%, transparent);
+}
+
+.mode-option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.mode-option-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.mode-option-desc {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.mode-option-check {
+  color: var(--opt-color);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+/* Header mode badge */
+.header-mode-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--mode-color) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mode-color) 30%, transparent);
+  color: var(--mode-color);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  margin-left: auto;
+}
+
+/* Mode chip on user messages */
+.mode-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--chip-color) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--chip-color) 30%, transparent);
+  color: var(--chip-color);
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  width: fit-content;
 }
 
 .url-badge {
@@ -437,11 +663,12 @@ body {
 }
 
 .typing-dot {
-  width: 6px;
-  height: 6px;
-  background-color: var(--text-muted);
+  width: 8px;
+  height: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
   border-radius: 50%;
   animation: typing 1.4s infinite ease-in-out both;
+  box-shadow: 0 0 6px var(--accent-glow);
 }
 
 .typing-dot:nth-child(1) {
