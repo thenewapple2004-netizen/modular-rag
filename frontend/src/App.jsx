@@ -7,6 +7,15 @@ import {
 import './index.css';
 
 // ── Mode definitions (auto is the silent default — not shown in picker) ────────
+const AUTO_MODE = {
+  key: 'auto',
+  label: 'Auto',
+  icon: null,
+  color: 'var(--accent)',
+  placeholder: 'Ask anything…',
+  desc: 'AI picks the best tool automatically',
+};
+
 const MODES = {
   vector_db: {
     key: 'vector_db',
@@ -25,6 +34,9 @@ const MODES = {
     desc: 'Scrape and analyse any webpage',
   },
 };
+
+// Safe lookup — always returns a valid mode object
+const getModeInfo = (key) => MODES[key] || AUTO_MODE;
 
 function App() {
   const [sessions, setSessions] = useState([
@@ -162,10 +174,10 @@ function App() {
     }
   };
 
-  // Derived from active mode (fallback gracefully to auto)
-  const activeModeDef = MODES[activeMode];
-  const ModeIcon = activeModeDef?.icon || null;
-  const modeColor = activeModeDef?.color || 'var(--accent)';
+  // Derived from active mode — always safe, never undefined
+  const activeModeDef = getModeInfo(activeMode);
+  const ModeIcon = activeModeDef.icon;
+  const modeColor = activeModeDef.color;
 
   return (
     <div className="app-layout">
@@ -213,10 +225,10 @@ function App() {
           <div className="header-title">Modular RAG</div>
 
           {/* Active mode badge in header — only when not auto */}
-          {activeMode !== 'auto' && (
+          {activeMode !== 'auto' && ModeIcon && (
             <div className="header-mode-badge" style={{ '--mode-color': modeColor }}>
               <ModeIcon size={13} />
-              {MODES[activeMode].label}
+              {activeModeDef.label}
             </div>
           )}
         </header>
@@ -328,10 +340,10 @@ function App() {
 
             <form onSubmit={handleSend} className="input-container">
               {/* Active mode indicator inside input */}
-              {activeMode !== 'auto' && (
+              {activeMode !== 'auto' && ModeIcon && (
                 <div className="active-mode-chip" style={{ '--chip-color': modeColor }}>
                   <ModeIcon size={12} />
-                  <span>{MODES[activeMode].label}</span>
+                  <span>{activeModeDef.label}</span>
                   <button type="button" onClick={() => setActiveMode('auto')} className="chip-remove" title="Reset to Auto">
                     <X size={10} />
                   </button>
@@ -353,7 +365,7 @@ function App() {
                 <textarea
                   ref={textareaRef}
                   className="chat-input"
-                  placeholder={MODES[activeMode].placeholder}
+                  placeholder={activeModeDef.placeholder}
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={e => {
