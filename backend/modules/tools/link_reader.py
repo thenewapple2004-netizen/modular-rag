@@ -62,5 +62,5 @@ WEBPAGE CONTENT:
 
 If neither the context nor the conversation history has the answer, say: 'I don't see this information in the extracted webpage.'"""
 
-    answer = llm_response(user_query, system_prompt, history=chat_history)
+    answer = llm_response(user_query, system_prompt, history=chat_history, max_tokens=8000)
     return answer

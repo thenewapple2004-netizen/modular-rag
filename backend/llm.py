@@ -9,7 +9,7 @@ client = OpenAI(
     base_url="https://api.groq.com/openai/v1",
 )
 
-def llm_response(query: str, system_prompt: str, history: list = None):
+def llm_response(query: str, system_prompt: str, history: list = None, max_tokens: int = 512):
     messages = [{"role": "system", "content": system_prompt}]
     
     if history:
@@ -20,6 +20,6 @@ def llm_response(query: str, system_prompt: str, history: list = None):
     response = client.chat.completions.create(
         messages=messages,
         model="llama-3.1-8b-instant",
-        max_tokens=500,
+        max_tokens=max_tokens,
     )
     return response.choices[0].message.content

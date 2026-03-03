@@ -112,5 +112,5 @@ DOCUMENT CONTEXT:
 FINAL REMINDER: Do not hallucinate. If neither the context nor the conversation history contains the answer, explain what is missing.
 """
 
-    answer = llm_response(refined_query, system_prompt, history=chat_history)
+    answer = llm_response(refined_query, system_prompt, history=chat_history, max_tokens=8000)
     return answer
