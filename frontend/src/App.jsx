@@ -233,7 +233,7 @@ function App() {
           {activeMode !== 'auto' && ModeIcon && (
             <div className="header-mode-badge" style={{ '--mode-color': modeColor }}>
               <ModeIcon size={13} />
-              {activeModeDef.label}
+              <span className="badge-label">{activeModeDef.label}</span>
             </div>
           )}
         </header>

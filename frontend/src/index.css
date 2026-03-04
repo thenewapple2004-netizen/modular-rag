@@ -249,11 +249,10 @@ body {
   height: 60px;
   display: flex;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 12px;
   border-bottom: 1px solid var(--border);
   background-color: transparent;
-  gap: 16px;
-  position: relative;
+  gap: 8px;
 }
 
 .icon-btn {
@@ -278,15 +277,16 @@ body {
   font-size: 1.1rem;
 }
 
-/* Centered header block */
+/* Centered header block — uses flex:1 so it never overlaps siblings */
 .header-center {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  justify-content: center;
+  gap: 1px;
+  min-width: 0;
+  /* allow shrinking on small screens */
   pointer-events: none;
 }
 
@@ -294,6 +294,10 @@ body {
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .header-topic {
@@ -301,13 +305,53 @@ body {
   font-weight: 600;
   letter-spacing: 0.8px;
   text-transform: uppercase;
-  padding: 2px 10px;
+  padding: 1px 8px;
   border-radius: 20px;
   background: linear-gradient(90deg, var(--accent), var(--accent-hover));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   opacity: 0.85;
+  white-space: nowrap;
+}
+
+/* Mode badge — right side, never grows */
+.header-mode-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--mode-color) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mode-color) 30%, transparent);
+  color: var(--mode-color);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Mobile: hide badge label, keep icon only */
+@media (max-width: 480px) {
+  .header-center .header-title {
+    font-size: 0.88rem;
+  }
+
+  .header-topic {
+    font-size: 0.6rem;
+    letter-spacing: 0.5px;
+  }
+
+  .header-mode-badge span,
+  .header-mode-badge .badge-label {
+    display: none;
+  }
+
+  .header-mode-badge {
+    padding: 5px 7px;
+    gap: 0;
+  }
 }
 
 /* Chat Area */
