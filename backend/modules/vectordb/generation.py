@@ -18,41 +18,22 @@ def vectordb_answer(user_query: str, chat_history: list = None) -> str:
     """
     Optimised Advanced RAG pipeline — single LLM call:
     1. Pre-retrieval: Lightweight Python query clean-up (no LLM)
-    2. Retrieval:     ChromaDB vector search + distance score
-    3. Confidence:    Pure distance threshold (no LLM)
-    4. Generation:    One LLM call for the final answer
+    2. Retrieval:     ChromaDB vector search
+    3. Generation:    One LLM call for the final answer
+    (No hard distance rejection — the LLM handles "not found" gracefully)
     """
 
-    # ── Step 1: Pre-Retrieval — fast Python clean-up, no LLM ─────────────────
-    # Strip leading/trailing whitespace and collapse multiple spaces.
-    # ChromaDB's embedding model handles typos and grammar well on its own.
+    # ── Step 1: Clean up query ────────────────────────────────────────────────
     refined_query = " ".join(user_query.strip().split())
     print(f"[Pre-Retrieval] Query: '{refined_query}'")
 
     # ── Step 2: Retrieval ─────────────────────────────────────────────────────
     retrieved_docs, best_distance = get_context(refined_query)
-    print(f"[Retrieval] Best ChromaDB distance: {best_distance:.4f}")
+    print(f"[Retrieval] Best ChromaDB distance: {best_distance:.4f} (informational only)")
 
-    # ── Step 3: Confidence — distance only, zero LLM calls ───────────────────
-    # ChromaDB cosine distance scale:
-    #   < 0.8   → very strong match
-    #   0.8–1.2 → good match, probably relevant
-    #   1.2–1.5 → weak/partial match
-    #   > 1.5   → likely out of scope
-    REJECTION_DISTANCE = 1.5
+    # ── Step 3: Generation — the only LLM call ───────────────────────────────
+    print(f"[Generation] Sending to LLM...")
 
-    if best_distance > REJECTION_DISTANCE:
-        print(f"[Confidence] Rejected (distance {best_distance:.3f} > {REJECTION_DISTANCE})")
-        return (
-            "**No relevant information found** in your documents for this query.\n\n"
-            "Your documents are about **Reinforcement Learning** — try asking something "
-            "related to that topic, such as policies, rewards, agents, Q-learning, or "
-            "specific RL algorithms."
-        )
-
-    print(f"[Confidence] Passed (distance {best_distance:.3f} ≤ {REJECTION_DISTANCE}) — generating answer")
-
-    # ── Step 4: Generation — the only LLM call ───────────────────────────────
     system_prompt = f"""
 ROLE:
 You are an expert Research Assistant specialised in analysing technical documents.
