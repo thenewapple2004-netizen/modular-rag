@@ -27,7 +27,7 @@ else:
             full_text += text + "\n"
     doc.close()
 
-    print(f"[Ingestion] Extracted {len(full_text):,} characters from {len(doc.pages) if hasattr(doc, 'pages') else 'N/A'} pages.")
+    print(f"[Ingestion] Extracted {len(full_text):,} characters from {doc.page_count} pages.")
 
     # ── Chunk with overlap ─────────────────────────────────────────────────────
     CHUNK_SIZE = 1000   # characters
