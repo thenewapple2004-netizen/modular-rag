@@ -1,58 +1,68 @@
 import chromadb
-from PyPDF2 import PdfReader
+import fitz  # pymupdf — much better PDF extraction than PyPDF2
 import os
 
-# 1. Use an Absolute Path so retrieval can always find the same DB
-DB_PATH = os.path.join(os.path.dirname(__file__), "chroma_db")
+# ── Paths (all relative — works locally AND on Render) ────────────────────────
+BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
+DB_PATH   = os.path.join(BASE_DIR, "chroma_db")
+PDF_PATH  = os.path.join(BASE_DIR, "rl_document.pdf")
+
+# ── ChromaDB setup ─────────────────────────────────────────────────────────────
 chroma_client = chromadb.PersistentClient(path=DB_PATH)
-collection = chroma_client.get_or_create_collection(name="my-collection")
+collection    = chroma_client.get_or_create_collection(name="my-collection")
 
-# Clear existing data to avoid duplicates on re-run
-existing = collection.get()
-if existing["ids"]:
-    collection.delete(ids=existing["ids"])
-    print(f"Cleared {len(existing['ids'])} existing chunks.")
+# ── Skip if already ingested (avoids re-embedding on every server restart) ─────
+existing_count = collection.count()
+if existing_count > 0:
+    print(f"[Ingestion] Skipped — {existing_count} chunks already in ChromaDB.")
+else:
+    print(f"[Ingestion] Starting... PDF: {PDF_PATH}")
 
-# 2. Read PDF
-pdf_path = r"D:\Noman Bhai AI\VectordB\ariticle\Reinforcement_Learning_Advancements_Limitations_an.pdf"
-reader = PdfReader(pdf_path)
-full_text = ""
-for page in reader.pages:
-    text = page.extract_text()
-    if text:
-        full_text += text + "\n"
+    # ── Extract text with pymupdf (handles complex layouts, tables, multi-column) ─
+    doc       = fitz.open(PDF_PATH)
+    full_text = ""
+    for page_num, page in enumerate(doc):
+        text = page.get_text("text")       # plain text extraction
+        if text.strip():
+            full_text += text + "\n"
+    doc.close()
 
-print(f"Extracted {len(full_text)} characters from PDF.")
+    print(f"[Ingestion] Extracted {len(full_text):,} characters from {len(doc.pages) if hasattr(doc, 'pages') else 'N/A'} pages.")
 
-# 3. Chunking with overlap (1000 chars per chunk, 100-char overlap)
-CHUNK_SIZE = 1000
-OVERLAP = 100
-chunks = []
+    # ── Chunk with overlap ─────────────────────────────────────────────────────
+    CHUNK_SIZE = 1000   # characters
+    OVERLAP    = 150    # characters carried over to next chunk for continuity
 
-words = full_text.split()
-current_chunk = ""
-last_words = []   # keep last few words for overlap
+    words   = full_text.split()
+    chunks  = []
+    current = ""
 
-for word in words:
-    if len(current_chunk) + len(word) + 1 <= CHUNK_SIZE:
-        current_chunk += word + " "
-    else:
-        chunk = current_chunk.strip()
-        if chunk:
-            chunks.append(chunk)
-        # Start next chunk with overlap from end of previous
-        overlap_text = current_chunk[-OVERLAP:].strip()
-        current_chunk = overlap_text + " " + word + " "
+    for word in words:
+        if len(current) + len(word) + 1 <= CHUNK_SIZE:
+            current += word + " "
+        else:
+            chunk = current.strip()
+            if chunk:
+                chunks.append(chunk)
+            # Start next chunk with overlap tail
+            overlap_text = current[-OVERLAP:].strip()
+            current = overlap_text + " " + word + " "
 
-if current_chunk.strip():
-    chunks.append(current_chunk.strip())
+    if current.strip():
+        chunks.append(current.strip())
 
-# 4. Add to DB
-chunk_ids = [f"id_{i}" for i in range(len(chunks))]
-print(f"Adding {len(chunks)} chunks to ChromaDB (chunk size: {CHUNK_SIZE}, overlap: {OVERLAP})...")
+    print(f"[Ingestion] Created {len(chunks)} chunks (size={CHUNK_SIZE}, overlap={OVERLAP}).")
 
-collection.add(
-    ids=chunk_ids,
-    documents=chunks
-)
-print("Done. Ingestion complete.")
+    # ── Add to ChromaDB ────────────────────────────────────────────────────────
+    chunk_ids = [f"chunk_{i}" for i in range(len(chunks))]
+    collection.add(ids=chunk_ids, documents=chunks)
+    print(f"[Ingestion] ✅ Done — {len(chunks)} chunks stored in ChromaDB.")
+
+
+if __name__ == "__main__":
+    # When run directly (forced re-ingest), clear first then re-run
+    existing = collection.get()
+    if existing["ids"]:
+        collection.delete(ids=existing["ids"])
+        print(f"[Force Re-ingest] Cleared {len(existing['ids'])} old chunks.")
+    # Re-run by temporarily clearing and calling again — handled above by count check

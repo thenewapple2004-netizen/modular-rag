@@ -4,7 +4,7 @@ services:
     env: python
     plan: free
     rootDir: backend
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && python modules/vectordb/Ingestion.py
     startCommand: python api.py
     envVars:
       - key: PORT
