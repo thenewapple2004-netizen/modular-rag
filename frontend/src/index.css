@@ -210,9 +210,131 @@ body {
   background: var(--bg-sidebar-hover);
 }
 
+/* ── Sidebar Guide ─────────────────────────────────────────── */
+.sidebar-guide {
+  border-top: 1px solid var(--border-sidebar);
+  margin: 0;
+}
+
+.guide-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  color: var(--text-sidebar);
+  font-family: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.guide-toggle:hover {
+  background: var(--bg-sidebar-hover);
+}
+
+.guide-toggle-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0.85;
+}
+
+.guide-panel {
+  padding: 4px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: slideDown 0.18s ease;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.guide-panel::-webkit-scrollbar {
+  width: 4px;
+}
+
+.guide-panel::-webkit-scrollbar-thumb {
+  background: var(--border-sidebar);
+  border-radius: 4px;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.guide-section-title {
+  font-size: 0.73rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-top: 6px;
+}
+
+.guide-para {
+  font-size: 0.82rem;
+  color: var(--text-sidebar);
+  line-height: 1.55;
+  opacity: 0.85;
+}
+
+.guide-para strong {
+  color: var(--text-sidebar);
+  opacity: 1;
+}
+
+.guide-mode-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--text-sidebar);
+  opacity: 0.85;
+  line-height: 1.4;
+}
+
+.guide-mode-chip {
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 7px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.guide-tips {
+  font-size: 0.8rem;
+  color: var(--text-sidebar);
+  opacity: 0.82;
+  line-height: 1.55;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.guide-tips li strong {
+  color: var(--text-sidebar);
+  opacity: 1;
+}
+
 .sidebar-footer {
   padding: 16px;
   border-top: 1px solid var(--border-sidebar);
+
 }
 
 .theme-toggle {

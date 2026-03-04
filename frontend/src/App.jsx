@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import {
   Send, Bot, User, Link as LinkIcon, Menu, Plus, MessageSquare,
-  Sun, Moon, Sparkles, Trash2, Database, Globe, X
+  Sun, Moon, Sparkles, Trash2, Database, Globe, X, BookOpen, ChevronDown, ChevronUp
 } from 'lucide-react';
 import './index.css';
 
@@ -51,6 +51,7 @@ function App() {
   // Mode state
   const [activeMode, setActiveMode] = useState('auto');
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
@@ -206,6 +207,54 @@ function App() {
               </button>
             </div>
           ))}
+        </div>
+
+        {/* ── Guide Section ──────────────────────────────── */}
+        <div className="sidebar-guide">
+          <button
+            className="guide-toggle"
+            onClick={() => setGuideOpen(o => !o)}
+          >
+            <div className="guide-toggle-left">
+              <BookOpen size={15} />
+              <span>About this Project</span>
+            </div>
+            {guideOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+
+          {guideOpen && (
+            <div className="guide-panel">
+              <p className="guide-section-title">📌 What is this?</p>
+              <p className="guide-para">
+                This is a <strong>Modular RAG</strong> (Retrieval-Augmented Generation)
+                assistant built on a knowledge base of
+                <strong> Reinforcement Learning</strong> research.
+                Ask it anything about RL concepts, algorithms, and advancements —
+                it searches the uploaded documents and answers with full context.
+              </p>
+
+              <p className="guide-section-title">⚡ Modes</p>
+              <div className="guide-mode-row">
+                <span className="guide-mode-chip" style={{ color: 'var(--accent)' }}>Auto</span>
+                <span>AI picks the best tool automatically for each query.</span>
+              </div>
+              <div className="guide-mode-row">
+                <span className="guide-mode-chip" style={{ color: '#34d399' }}>Vector DB</span>
+                <span>Only searches your RL documents — perfect for document Q&amp;A.</span>
+              </div>
+              <div className="guide-mode-row">
+                <span className="guide-mode-chip" style={{ color: '#60a5fa' }}>Webpage</span>
+                <span>Paste any URL — the page is scraped and used as context.</span>
+              </div>
+
+              <p className="guide-section-title">💡 Tips</p>
+              <ul className="guide-tips">
+                <li>Use the <strong>+</strong> button in the chat bar to switch modes.</li>
+                <li>Follow-up questions work — the assistant remembers the conversation.</li>
+                <li>For best results in Vector DB mode, ask specific RL questions.</li>
+              </ul>
+            </div>
+          )}
         </div>
 
         <div className="sidebar-footer">
