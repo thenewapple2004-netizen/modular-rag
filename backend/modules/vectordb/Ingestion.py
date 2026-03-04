@@ -25,9 +25,10 @@ else:
         text = page.get_text("text")       # plain text extraction
         if text.strip():
             full_text += text + "\n"
+    page_count = doc.page_count
     doc.close()
 
-    print(f"[Ingestion] Extracted {len(full_text):,} characters from {doc.page_count} pages.")
+    print(f"[Ingestion] Extracted {len(full_text):,} characters from {page_count} pages.")
 
     # ── Chunk with overlap ─────────────────────────────────────────────────────
     CHUNK_SIZE = 1000   # characters
