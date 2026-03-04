@@ -13,58 +13,95 @@ if BASE_DIR not in sys.path:
 from llm import llm_response
 from retrival import get_context
 
-# Calibrated from real distance measurements:
-#   RL in-scope queries  → ~0.7   (clearly in document)
-#   RAG/other topics     → ~1.4+  (out of scope)
-# Threshold of 1.2 gives clean separation with a safety margin.
+# Calibrated from real query distances:
+#   RL in-scope  → ~0.65–0.85   (clearly in document)
+#   Out-of-scope → ~1.4–1.9     (unrelated topics)
 REJECTION_DISTANCE = 1.2
+
+
+def build_search_query(user_query: str, chat_history: list) -> str:
+    """
+    Short follow-up queries ("can you give examples?", "explain more", "why?")
+    have no domain keywords — they'll get a high distance score and be wrongly rejected.
+    Fix: if the query is short AND we have chat history, prepend the last user
+    message so ChromaDB gets a semantically complete search string.
+    The original query is still used for the LLM answer.
+    """
+    words = user_query.strip().split()
+    is_short_followup = len(words) <= 8  # short = likely a follow-up
+
+    if is_short_followup and chat_history:
+        # Find the last user turn in history
+        last_user_msg = next(
+            (m["content"] for m in reversed(chat_history) if m.get("role") == "user"),
+            None
+        )
+        if last_user_msg:
+            expanded = f"{last_user_msg} {user_query}"
+            print(f"[Query Expanded] '{user_query}' → '{expanded[:80]}...'")
+            return expanded
+
+    return user_query
+
 
 def vectordb_answer(user_query: str, chat_history: list = None) -> str:
     """
-    Advanced RAG pipeline — single LLM call:
-    1. Query clean-up  (Python, no LLM)
-    2. Vector retrieval (ChromaDB)
-    3. Distance gate    (reject out-of-scope, no LLM)
-    4. Grounded answer  (one LLM call, strictly from document)
+    Advanced RAG pipeline — single LLM call, fully context-aware:
+    1. Query clean-up + follow-up expansion (Python, no LLM)
+    2. Vector retrieval (ChromaDB, using expanded query for distance)
+    3. Distance gate (reject out-of-scope queries)
+    4. Grounded answer (one LLM call, strictly from document + chat memory)
     """
+    chat_history = chat_history or []
 
-    # ── Step 1: Clean up query ────────────────────────────────────────────────
+    # ── Step 1: Clean up + expand follow-ups for better retrieval ─────────────
     refined_query = " ".join(user_query.strip().split())
-    print(f"[Query] '{refined_query}'")
+    search_query  = build_search_query(refined_query, chat_history)
 
-    # ── Step 2: Retrieval ─────────────────────────────────────────────────────
-    retrieved_docs, best_distance = get_context(refined_query)
+    # ── Step 2: Retrieval using the semantically-expanded query ───────────────
+    retrieved_docs, best_distance = get_context(search_query)
     print(f"[Distance] {best_distance:.4f}  (threshold: {REJECTION_DISTANCE})")
 
-    # ── Step 3: Distance gate — reject clearly out-of-scope queries ───────────
-    if best_distance > REJECTION_DISTANCE:
-        print(f"[Rejected] Distance {best_distance:.4f} > {REJECTION_DISTANCE}")
-        return (
-            "⚠️ **This topic is not covered in your document.**\n\n"
-            "Your uploaded document is about **Reinforcement Learning** — including topics like "
-            "policies, rewards, agents, Q-learning, deep RL, and RL algorithms.\n\n"
-            "Please ask something related to those topics."
-        )
+    # ── Step 3: Distance check & Context Prep ─────────────────────────────────
+    # If we're in a conversation (history exists), be slightly more lenient
+    effective_threshold = REJECTION_DISTANCE + (0.2 if chat_history else 0.0)
+    is_out_of_scope = best_distance > effective_threshold
 
-    # ── Step 4: Strictly grounded answer ─────────────────────────────────────
-    print(f"[Generating] Distance {best_distance:.4f} passed gate.")
+    print(f"[Generating] Distance {best_distance:.4f} (threshold: {effective_threshold:.1f})")
 
-    system_prompt = f"""You are a document Q&A assistant. Your ONLY job is to answer questions using the DOCUMENT CONTEXT provided below.
+    # Format conversation history explicitly in the prompt
+    history_text = ""
+    if chat_history:
+        history_text = "\n\nCONVERSATION SO FAR:\n"
+        for msg in chat_history:
+            role = "User" if msg.get("role") == "user" else "Assistant"
+            history_text += f"{role}: {msg.get('content', '')}\n"
+        history_text += "\n(Use the conversation above to understand follow-ups, repeated questions, and meta-questions.)"
 
-STRICT RULES — you MUST follow these without exception:
-1. ONLY use information that is EXPLICITLY present in the DOCUMENT CONTEXT below.
-2. Do NOT use your general training knowledge, even if you know the answer from elsewhere.
-3. If the DOCUMENT CONTEXT does not contain enough information to answer the question, respond with:
-   "⚠️ This specific topic is not covered in your Reinforcement Learning document."
-4. Never guess, infer beyond the text, or fill gaps with outside knowledge.
-5. Always finish your answer completely — never truncate mid-sentence.
+    # Strict fallback handling for out-of-scope queries
+    out_of_scope_instruction = ""
+    if is_out_of_scope:
+        out_of_scope_instruction = """
+[CRITICAL WARNING]: The user's query topic is NOT found in the document.
+IF the user is asking a new general knowledge question (e.g., Python, math, recipes, or general RAG not in doc), YOU MUST REFUSE by saying: "⚠️ **This topic is not covered in your document.** Please ask something related to Reinforcement Learning."
+HOWEVER, IF the user is asking about the chat history itself (e.g., "what did I just ask?", "what was my last question?"), answer it normally using the CONVERSATION SO FAR.
+"""
 
-DOCUMENT CONTEXT:
+    system_prompt = f"""You are an expert assistant on Reinforcement Learning, answering questions based on the provided document and conversation memory.
+{history_text}
+
+DOCUMENT CONTENT (For RL domain questions):
 {retrieved_docs}
+{out_of_scope_instruction}
+RULES:
+1. REPEATED QUESTIONS: If the user asks a question they have already asked in the CONVERSATION SO FAR (or very similar), politely say "You already asked that!" and provide only a brief summary or any NEW insights.
+2. META-QUESTIONS: If the user asks about the conversation itself (e.g. "what was my previous question?"), answer accurately using the CONVERSATION SO FAR.
+3. CONTEXT-AWARE: Read the CONVERSATION SO FAR carefully. For follow-ups ("give examples", "explain more"), figure out the topic from the conversation and answer using the DOCUMENT.
+4. DOCUMENT-FIRST: Base your RL answers exclusively on the DOCUMENT CONTENT above.
+5. HONEST GAPS: If the document doesn't cover a specific RL detail, say "Your document doesn't specifically cover this detail, but it DOES discuss..." and explain what is related.
+6. COMPLETE: Always finish your sentence. Use headings/bullets for readability.
 
-USER QUERY: {refined_query}
-
-Remember: answer ONLY from the document above. If it's not there, say so."""
+Current question: {refined_query}"""
 
     answer = llm_response(refined_query, system_prompt, history=chat_history, max_tokens=8000)
     return answer
